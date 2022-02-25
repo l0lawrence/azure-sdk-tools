@@ -317,6 +317,13 @@
                 for (var lineNumber = 1; lineNumber <= logLines.Count; lineNumber++)
                 {
                     var line = logLines[lineNumber - 1];
+
+                    // Lines in build logs are prefixed with a fixed length timestamp:
+                    //
+                    // 2022-02-24T22:01:54.8194613Z Author       : Microsoft Corporation
+                    //
+                    // Occasionally, a line will not have a leading time stamp.  This may be due to a explicit line break written to stdout.  When this occurs,
+                    // we use the timestamp from the previous line.
                     var match = Regex.Match(line, @"^([^Z]{20,28}Z) (.*)$");
                     var timestamp = match.Success
                         ? DateTime.ParseExact(match.Groups[1].Value, TimeFormat, null,
@@ -327,6 +334,7 @@
 
                     if (timestamp == null)
                     {
+                        logger.LogError("Unable to parse line number from line '{Line}'", line);
                         throw new Exception($"Error processing line {lineNumber}. No leading timestamp.");
                     }
 
