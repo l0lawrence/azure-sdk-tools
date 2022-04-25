@@ -8,6 +8,7 @@ Pylint custom checkers for SDK guidelines: C4717 - C4744
 """
 
 import logging
+from typing import overload
 import astroid
 from pylint.checkers import BaseChecker
 from pylint.interfaces import IAstroidChecker
@@ -1916,6 +1917,51 @@ class CheckNamingMismatchGeneratedCode(BaseChecker):
                 logger.debug("Pylint custom checker failed to check if model is aliased.")
                 pass
 
+class TypingOverloadReturnNone(BaseChecker):
+    __implements__ = IAstroidChecker
+
+    name = "check-overload-typing"
+    priority = -1
+    msgs = {
+        "C4749": (
+            "BALH. ",
+            "overloaded-function-returns-none",
+            "BLAH.",
+        ),
+    }
+    options = (
+        (
+            "ignore-overloaded-function-returns-none",
+            {
+                "default": False,
+                "type": "yn",
+                "metavar": "<y_or_n>",
+                "help": "blah.",
+            },
+        ),
+    )
+
+    def __init__(self, linter=None):
+        super(TypingOverloadReturnNone, self).__init__(linter)
+
+    #Test on tables
+    def visit_classdef(self,node):
+        if node.name.endswith("Client"):
+            overloaded_functions = []
+            all_functions = {}
+            for i in node.body:
+                if isinstance(i, astroid.FunctionDef):
+                    if 'typing.overload' in i.decoratornames():
+                        overloaded_functions.append(i)
+                    else:
+                        all_functions.update({i.name:i})
+            for func in overloaded_functions:
+                if func.name in all_functions.keys():
+                    if (isinstance(func, astroid.AsyncFunctionDef) and not isinstance(all_functions.get(func.name), astroid.AsyncFunctionDef)) \
+                        or (not isinstance(func, astroid.AsyncFunctionDef) and isinstance(all_functions.get(func.name), astroid.AsyncFunctionDef)):
+                                self.add_message(
+                                    msgid="overloaded-function-returns-none", node=func, confidence=None
+                                )
 
 # if a linter is registered in this function then it will be checked with pylint
 def register(linter):
@@ -1937,6 +1983,7 @@ def register(linter):
     linter.register_checker(CheckNamingMismatchGeneratedCode(linter))
     linter.register_checker(CheckAPIVersion(linter))
     linter.register_checker(CheckEnum(linter))
+    linter.register_checker(TypingOverloadReturnNone(linter))
 
 
     # disabled by default, use pylint --enable=check-docstrings if you want to use it
