@@ -1916,6 +1916,83 @@ class CheckNamingMismatchGeneratedCode(BaseChecker):
                 logger.debug("Pylint custom checker failed to check if model is aliased.")
                 pass
 
+class ReturnTypeMismatch(BaseChecker):
+    __implements__ = IAstroidChecker
+
+    name = "return-type-mismatch"
+    priority = -1
+    msgs = {
+        "C4750": (
+            "BLAH",
+            "return-type-mismatch",
+            "BLAH",
+        ),
+    }
+    options = (
+        (
+            "ignore-return-type-mismatch",
+            {
+                "default": False,
+                "type": "yn",
+                "metavar": "<y_or_n>",
+                "help": "BLAH.",
+            },
+        ),
+    )
+
+    def __init__(self, linter=None):
+        super(ReturnTypeMismatch, self).__init__(linter)
+
+    def visit_functiondef(self, node):
+
+        tilda_to_ignore_package = "~"
+
+        if node.type_comment_returns:
+            try:
+                # Not every method will have a docstring so don't crash here, just return
+                docstring = node.doc.split("\n")
+            except AttributeError:
+                return
+
+            return_type = -1
+            for line in docstring:
+                if "rtype" in line:
+                    return_type = docstring.index(line)
+            # TODO: If there is no rtype -- return, nothing to compare --- we might want to actually remove this
+            if return_type==-1:
+                return
+
+            rtype = node.type_comment_returns.as_string()
+
+            # If rtype has a path
+            if "." in node.type_comment_returns.as_string():
+                rtype = self.format_paths([rtype], False)
+
+            doc_type = docstring[return_type].split(":")[-1].strip()
+
+            # If there is a tilda, ignore the package path and just compare the name, if there are multiple - make it a Union
+            is_union = False
+            if tilda_to_ignore_package in doc_type:
+                if " or " in doc_type:
+                    is_union = True
+                packages = doc_type.split(tilda_to_ignore_package)
+                doc_type = self.format_paths(packages, is_union)
+
+            if rtype.lower() not in doc_type.lower():
+                self.add_message(
+                    msgid="return-type-mismatch", node=node, confidence=None
+                )
+    def format_paths(self, packages, is_union):
+        formatted_package = ''
+        for p in range(0, len(packages)):
+            formatted_package += packages[p].split(".")[-1].strip()
+            # If it is an "or"
+            if p!=0 and p!=len(packages)-1 and is_union:
+                formatted_package += ", "
+        if len(packages) > 1 and is_union:
+            formatted_package = formatted_package.replace(" or,",",")
+            formatted_package = "Union["+formatted_package+"]"
+        return formatted_package
 
 # if a linter is registered in this function then it will be checked with pylint
 def register(linter):
@@ -1937,6 +2014,8 @@ def register(linter):
     linter.register_checker(CheckNamingMismatchGeneratedCode(linter))
     linter.register_checker(CheckAPIVersion(linter))
     linter.register_checker(CheckEnum(linter))
+    linter.register_checker(ReturnTypeMismatch(linter))
+
 
 
     # disabled by default, use pylint --enable=check-docstrings if you want to use it
