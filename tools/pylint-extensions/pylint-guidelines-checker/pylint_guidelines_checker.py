@@ -1987,37 +1987,6 @@ class NonAbstractTransportImport(BaseChecker):
                         confidence=None,
                     )
 
-class DistributedTracing(BaseChecker):
-    """Check that methods that make network calls are decorated with distributed tracing."""
-
-    name = "network-method-distributed-tracing"
-    priority = -1
-    msgs = {
-        "C4751": (
-            "Distributed tracing.",
-            "network-method-distributed-tracing",
-            ".",
-        ),
-    }
-    IGNORE_METHODS = ["__init__", "from_connection_string"]
-
-    def visit_functiondef(self, node):
-        try:
-            # Check if it is a method
-            if node.name not in self.IGNORE_METHODS and node.parent.name.endswith("Client"):
-                if node.decorators:
-                    for i in node.decorators.nodes:
-                        if i.name!="distributed_trace" and i.name!="distributed_trace_async":
-                            self.add_message(
-                                msgid=f"network-method-distributed-tracing",
-                                node=node,
-                                confidence=None,
-                            )
-        except Exception:
-            pass
-
-    visit_asyncfunctiondef = visit_functiondef
-
 # if a linter is registered in this function then it will be checked with pylint
 def register(linter):
     linter.register_checker(ClientsDoNotUseStaticMethods(linter))
@@ -2041,7 +2010,6 @@ def register(linter):
     linter.register_checker(NonCoreNetworkImport(linter))
     linter.register_checker(ClientListMethodsUseCorePaging(linter))
     linter.register_checker(NonAbstractTransportImport(linter))
-    linter.register_checker(DistributedTracing(linter))
 
 
 
@@ -2051,7 +2019,7 @@ def register(linter):
     # Rules are disabled until false positive rate improved
     # linter.register_checker(CheckForPolicyUse(linter))
     # linter.register_checker(ClientHasApprovedMethodNamePrefix(linter))
-    # linter.register_checker(ClientMethodsHaveTracingDecorators(linter))
+    linter.register_checker(ClientMethodsHaveTracingDecorators(linter))
     # linter.register_checker(ClientDocstringUsesLiteralIncludeForCodeExample(linter))
     # linter.register_checker(ClientLROMethodsUseCorePolling(linter))
     # linter.register_checker(ClientLROMethodsUseCorrectNaming(linter))
