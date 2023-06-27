@@ -1387,8 +1387,16 @@ class CheckDocstringParameters(BaseChecker):
             if returns == "None":
                 return
         except (astroid.exceptions.InferenceError, AttributeError):
-            # this function doesn't return anything, just return
-            return
+            # If can't infer the return type, see if we have any type annotations
+            try:
+                if node.returns.value is not None:
+                    pass
+                else:
+                    return
+            except:
+                # this function doesn't return anything, just return
+                return
+            
 
         try:
             # not every method will have a docstring so don't crash here, just return
