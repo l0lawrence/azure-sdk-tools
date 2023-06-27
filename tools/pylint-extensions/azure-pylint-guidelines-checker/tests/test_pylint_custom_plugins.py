@@ -3458,6 +3458,29 @@ class TestDocstringParameters(pylint.testutils.CheckerTestCase):
         with self.assertNoMessages():
             self.checker.visit_functiondef(node)
 
+    def test_docstring_property_rtype(self):
+        node = astroid.extract_node(
+            """
+            from typing import Optional
+            @property
+            def claims(self) -> Optional[str]: #@
+                '''Additional claims required in the next authentication'''
+                return self._claims
+            """
+        )
+        with self.assertAddsMessages(
+                pylint.testutils.MessageTest(
+                    msg_id="docstring-missing-rtype",
+                    line=4,
+                    args=None,
+                    node=node,
+                    col_offset=0, 
+                    end_line=4, 
+                    end_col_offset=16
+            ),
+        ):
+            self.checker.visit_functiondef(node)
+
     def test_docstring_no_property_decorator(self):
         node = astroid.extract_node(
             """
