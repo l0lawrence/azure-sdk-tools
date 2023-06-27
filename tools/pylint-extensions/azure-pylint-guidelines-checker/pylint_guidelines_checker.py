@@ -1373,6 +1373,25 @@ class CheckDocstringParameters(BaseChecker):
                 confidence=None
             )
 
+    def has_return_value(self, return_node):
+        """Check if a return node has a non-None value.
+
+        :param return_node: The return node to check.
+        :type return_node: astroid.Return
+        :rtype: bool
+        :return: True if the return node has a non-None value, False otherwise.
+        """
+        # Get the value of the return node
+        value = return_node.value
+        # If the value is None, return False
+        if value is None:
+            return False
+        # If the value is a constant node, check if its value is None
+        if isinstance(value, astroid.Const):
+            return value.value is not None
+        # Otherwise, assume the value is not None and return True
+        return True
+
     def check_return(self, node):
         """Checks if function returns anything.
         If return found, checks that the docstring contains a return doc and rtype.
@@ -1382,12 +1401,12 @@ class CheckDocstringParameters(BaseChecker):
         """
         # Get decorators on the function
         function_decorators = node.decoratornames()
-        try:
-            returns = next(node.infer_call_result()).as_string()
-            if returns == "None":
-                return
-        except (astroid.exceptions.InferenceError, AttributeError):
-            # this function doesn't return anything, just return
+
+        returns = [sub_node for sub_node in node.body if isinstance(sub_node, astroid.Return)]
+        # Use returns_something to check if any return node has a non-None value
+        has_return_value = any(self.has_return_value(r) for r in returns)
+ 
+        if has_return_value is False:
             return
 
         try:
