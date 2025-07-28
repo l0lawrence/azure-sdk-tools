@@ -31,5 +31,11 @@ namespace Azure.Sdk.Tools.Cli.Commands
             Description: "Log processing commands",
             Options: []
         );
+
+        public static readonly CommandGroup CIChecks = new(
+            Verb: "ci",
+            Description: "Common CI checks and validations",
+            Options: []
+        );
     }
 }

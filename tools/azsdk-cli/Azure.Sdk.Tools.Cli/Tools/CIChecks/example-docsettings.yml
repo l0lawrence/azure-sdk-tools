@@ -1,0 +1,80 @@
+# Example doc-warden settings file for README verification
+# Place this file as .docsettings.yml in your repository root
+
+# File patterns to include in scanning
+include_patterns:
+  - "**/*.md"
+  - "**/*.rst"
+
+# File patterns to exclude from scanning
+exclude_patterns:
+  - "**/node_modules/**"
+  - "**/target/**"
+  - "**/build/**"
+  - "**/.git/**"
+  - "**/dist/**"
+
+# README validation rules
+readme_rules:
+  # Require specific sections in README files
+  required_sections:
+    - "Getting Started"
+    - "Key concepts"
+    - "Examples"
+    - "Troubleshooting"
+    - "Next steps"
+    - "Contributing"
+
+  # Optional sections that are recommended
+  recommended_sections:
+    - "Prerequisites"
+    - "Installation"
+    - "Authentication"
+
+  # Heading format requirements
+  heading_format:
+    style: "title_case"  # or "sentence_case"
+    max_depth: 6
+
+# Link validation settings
+links:
+  # Check for broken internal links
+  validate_internal: true
+  
+  # Check external links (may be slow)
+  validate_external: false
+  
+  # Allowed domains for external links
+  allowed_domains:
+    - "docs.microsoft.com"
+    - "github.com"
+    - "azure.microsoft.com"
+
+# Code block validation
+code_blocks:
+  # Require language specification for code blocks
+  require_language: true
+  
+  # Allowed languages
+  allowed_languages:
+    - "bash"
+    - "shell"
+    - "python"
+    - "javascript"
+    - "typescript"
+    - "csharp"
+    - "java"
+    - "json"
+    - "yaml"
+    - "xml"
+
+# Content validation
+content:
+  # Maximum line length (0 to disable)
+  max_line_length: 120
+  
+  # Require README.md files to have a minimum number of lines
+  min_content_length: 10
+  
+  # Check for common typos and style issues
+  style_check: true

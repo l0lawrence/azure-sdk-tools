@@ -26,6 +26,10 @@ namespace Azure.Sdk.Tools.Cli.Services
             services.AddSingleton<ITypeSpecHelper, TypeSpecHelper>();
             services.AddSingleton<ISpecPullRequestHelper, SpecPullRequestHelper>();
             services.AddSingleton<IUserHelper, UserHelper>();
+
+            // CI Checks
+            services.AddSingleton<Tools.CIChecks.Checks.VerifyReadmeCheck>();
+            services.AddSingleton<Tools.CIChecks.ICICheckRunner, Tools.CIChecks.CICheckRunner>();
         }
     }
 }
