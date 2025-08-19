@@ -13,9 +13,16 @@ public class CLICheckResponse: Response
     [JsonPropertyName("check_status_details")]
     public string CheckStatusDetails { get; set;}
 
+    /// <summary>
+    /// Suggested next steps or actions to resolve the error.
+    /// </summary>
+    [JsonPropertyName("next_steps")]
+    public string? NextSteps { get; set; }
+
     public CLICheckResponse() { }
 
-    public CLICheckResponse(int exitCode, string checkStatusDetails, string error = null)
+
+    public CLICheckResponse(int exitCode, string checkStatusDetails, string error = null, string? nextSteps = null)
     {
         ExitCode = exitCode;
         CheckStatusDetails = checkStatusDetails;
@@ -23,11 +30,20 @@ public class CLICheckResponse: Response
         {
             ResponseError = error;
         }
+        if (!string.IsNullOrEmpty(nextSteps))
+        {
+            NextSteps = nextSteps;
+        }
     }
 
     public override string ToString()
     {
-        return ToString(CheckStatusDetails);
+        var output = ToString(CheckStatusDetails);
+        if (!string.IsNullOrWhiteSpace(NextSteps))
+        {
+            output += System.Environment.NewLine + "Next Steps:" + System.Environment.NewLine + NextSteps;
+        }
+        return output;
     }
 }
 
@@ -39,14 +55,21 @@ public class CookbookCLICheckResponse : CLICheckResponse
     [JsonPropertyName("cookbook_reference")]
     public string CookbookReference { get; set;}
 
-    public CookbookCLICheckResponse(int exitCode, string checkStatusDetails, string cookbookReference) : base(exitCode, checkStatusDetails)
+
+    public CookbookCLICheckResponse(int exitCode, string checkStatusDetails, string cookbookReference, string? nextSteps = null)
+        : base(exitCode, checkStatusDetails, null, nextSteps)
     {
         CookbookReference = cookbookReference;
     }
 
     public override string ToString()
     {
-        return ToString(CheckStatusDetails);
+        var output = ToString(CheckStatusDetails);
+        if (!string.IsNullOrWhiteSpace(NextSteps))
+        {
+            output += System.Environment.NewLine + "Next Steps:" + System.Environment.NewLine + NextSteps;
+        }
+        return output;
     }
 }
 

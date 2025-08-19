@@ -81,7 +81,12 @@ namespace Azure.Sdk.Tools.Cli.Tools
                 if (!Directory.Exists(packagePath))
                 {
                     SetFailure(1);
-                    return new CLICheckResponse(1, "", $"Package path does not exist: {packagePath}");
+                    return new CLICheckResponse(
+                        1,
+                        "",
+                        $"Package path does not exist: {packagePath}",
+                        "Verify the package path is correct and exists on disk.\nCheck for typos in the provided path.\nEnsure the directory is accessible."
+                    );
                 }
 
                 // Create language service
@@ -94,23 +99,43 @@ namespace Azure.Sdk.Tools.Cli.Tools
                 catch (ArgumentException ex)
                 {
                     SetFailure(1);
-                    return new CLICheckResponse(1, "", $"Invalid package path: {ex.Message}");
+                    return new CLICheckResponse(
+                        1,
+                        "",
+                        $"Invalid package path: {ex.Message}",
+                        "Ensure the provided path points to a valid SDK package directory.\nCheck the documentation for the expected directory structure."
+                    );
                 }
                 catch (DirectoryNotFoundException ex)
                 {
                     SetFailure(1);
-                    return new CLICheckResponse(1, "", $"Package directory not found: {ex.Message}");
+                    return new CLICheckResponse(
+                        1,
+                        "",
+                        $"Package directory not found: {ex.Message}",
+                        "Confirm the directory exists and is accessible.\nCheck for typos or missing folders in the path."
+                    );
                 }
                 catch (NotSupportedException ex)
                 {
                     SetFailure(1);
-                    return new CLICheckResponse(1, "", $"Unsupported language: {ex.Message}");
+                    return new CLICheckResponse(
+                        1,
+                        "",
+                        $"Unsupported language: {ex.Message}",
+                        "Check that the package is written in a supported language.\nRefer to the documentation for supported languages."
+                    );
                 }
                 catch (Exception ex)
                 {
                     SetFailure(1);
                     logger.LogError(ex, "Failed to create language service");
-                    return new CLICheckResponse(1, "", $"Unable to determine language for package at: {packagePath}. Error: {ex.Message}");
+                    return new CLICheckResponse(
+                        1,
+                        "",
+                        $"Unable to determine language for package at: {packagePath}. Error: {ex.Message}",
+                        "Ensure the package directory contains recognizable SDK files.\nCheck for missing or malformed configuration files."
+                    );
                 }
 
                 return checkName switch
@@ -128,7 +153,12 @@ namespace Azure.Sdk.Tools.Cli.Tools
             {
                 logger.LogError(ex, "Unhandled exception while running package check");
                 SetFailure(1);
-                return new CLICheckResponse(1, ex.ToString(), $"Unhandled exception while running {checkName} check");
+                return new CLICheckResponse(
+                    1,
+                    ex.ToString(),
+                    $"Unhandled exception while running {checkName} check",
+                    "Check the error details above for more information.\nIf the issue persists, file a bug or contact the SDK engineering team."
+                );
             }
         }
 
