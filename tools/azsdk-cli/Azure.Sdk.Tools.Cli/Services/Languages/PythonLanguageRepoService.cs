@@ -5,30 +5,17 @@ using Microsoft.Extensions.Logging;
 namespace Azure.Sdk.Tools.Cli.Services;
 
 /// <summary>
-/// Python-specific implementation of language checks.
+/// Python-specific implementation of language repository service.
+/// Uses tools like tox, pip, black, flake8, etc. for Python development workflows.
 /// </summary>
-public class PythonLanguageSpecificChecks : ILanguageSpecificChecks
+public class PythonLanguageRepoService : LanguageRepoService
 {
-    private readonly IProcessHelper _processHelper;
-    private readonly INpxHelper _npxHelper;
-    private readonly IGitHelper _gitHelper;
-    private readonly ILogger<PythonLanguageSpecificChecks> _logger;
-
-    public PythonLanguageSpecificChecks(
-        IProcessHelper processHelper, 
-        INpxHelper npxHelper, 
-        IGitHelper gitHelper, 
-        ILogger<PythonLanguageSpecificChecks> logger)
+    public PythonLanguageRepoService(IProcessHelper processHelper, INpxHelper npxHelper, IGitHelper gitHelper, ILogger<PythonLanguageRepoService> logger)
+        : base(processHelper, npxHelper, gitHelper, logger)
     {
-        _processHelper = processHelper;
-        _npxHelper = npxHelper;
-        _gitHelper = gitHelper;
-        _logger = logger;
     }
 
-    public string SupportedLanguage => "Python";
-
-    public async Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct = default)
+    public override async Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct = default)
     {
         try
         {

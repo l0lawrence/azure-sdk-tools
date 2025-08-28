@@ -1,4 +1,3 @@
-using System;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.IO.Enumeration;
@@ -64,9 +63,9 @@ namespace Azure.Sdk.Tools.Cli.Commands
             IsRequired = false,
         };
 
-        public static Option<string> PackagePath = new(["--package-path", "-p"], () => Environment.CurrentDirectory, "Path to the package directory to check. Defaults to the current working directory")
+        public static Option<string> PackagePath = new(["--package-path", "-p"], "Path to the package directory to check")
         {
-            IsRequired = false
+            IsRequired = true
         };
 
         public static (string, bool) GetGlobalOptionValues(string[] args)

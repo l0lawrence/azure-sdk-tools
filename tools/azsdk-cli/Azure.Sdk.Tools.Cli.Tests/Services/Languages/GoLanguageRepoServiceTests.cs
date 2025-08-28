@@ -8,12 +8,12 @@ using Moq;
 
 namespace Azure.Sdk.Tools.Cli.Tests.Services
 {
-    internal class GoLanguageSpecificChecksTests
+    internal class GoLanguageRepoServiceTests
     {
         private string GoPackageDir { get; set; }
         private static string GoProgram => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "go.exe" : "go";
 
-        private GoLanguageSpecificChecks LangService { get; set; }
+        private GoLanguageRepoService LangService { get; set; }
 
         [SetUp]
         public async Task SetUp()
@@ -23,11 +23,11 @@ namespace Azure.Sdk.Tools.Cli.Tests.Services
 
             var mockGitHubService = new Mock<IGitHubService>();
             var gitHelper = new GitHelper(mockGitHubService.Object, NullLogger<GitHelper>.Instance);
-            LangService = new GoLanguageSpecificChecks(new ProcessHelper(NullLogger<ProcessHelper>.Instance, Mock.Of<IOutputHelper>()), new NpxHelper(NullLogger<NpxHelper>.Instance, Mock.Of<IOutputHelper>()), gitHelper, NullLogger<GoLanguageSpecificChecks>.Instance);
+            LangService = new GoLanguageRepoService(new ProcessHelper(NullLogger<ProcessHelper>.Instance, Mock.Of<IOutputHelper>()), new NpxHelper(NullLogger<NpxHelper>.Instance, Mock.Of<IOutputHelper>()), gitHelper, NullLogger<GoLanguageRepoService>.Instance);
 
             if (!await LangService.CheckDependencies(CancellationToken.None))
             {
-                Assert.Ignore("go and golangci-lint aren't installed, can't run GoLanguageSpecificChecksTests");
+                Assert.Ignore("go and golangci-lint aren't installed, can't run GoLanguageRepoServiceTests");
             }
 
             var resp = await LangService.CreateEmptyPackage(GoPackageDir, "untitleddotloop", CancellationToken.None);
@@ -51,7 +51,7 @@ namespace Azure.Sdk.Tools.Cli.Tests.Services
         }
 
         [Test]
-        public async Task TestGoLanguageSpecificChecksBasic()
+        public async Task TestGoLanguageRepoServiceBasic()
         {
             await File.WriteAllTextAsync(Path.Combine(GoPackageDir, "main.go"), """
                 package main
@@ -89,7 +89,7 @@ namespace Azure.Sdk.Tools.Cli.Tests.Services
         }
 
         [Test]
-        public async Task TestGoLanguageSpecificChecksCompileErrors()
+        public async Task TestGoLanguageRepoServiceCompileErrors()
         {
             await File.WriteAllTextAsync(Path.Combine(GoPackageDir, "main.go"), """
                 package main
@@ -111,7 +111,7 @@ namespace Azure.Sdk.Tools.Cli.Tests.Services
         }
 
         [Test]
-        public async Task TestGoLanguageSpecificChecksLintErrors()
+        public async Task TestGoLanguageRepoServiceLintErrors()
         {
             await File.WriteAllTextAsync(Path.Combine(GoPackageDir, "main.go"), """
                 package main

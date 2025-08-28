@@ -6,67 +6,100 @@ using Microsoft.Extensions.Logging;
 namespace Azure.Sdk.Tools.Cli.Services;
 
 /// <summary>
-/// Interface for language repository service operations.
+/// Interface for language-specific repository operations.
+/// Each language must implement these commands, though their execution will differ
+/// based on language-specific tools and conventions.
 /// </summary>
-public interface ILanguageChecks
+public interface ILanguageRepoService
 {
     /// <summary>
-    /// Analyzes dependencies for the specific package.
+    /// Perform dependency analysis for the target language.
     /// </summary>
-    /// <param name="packagePath">Path to the package directory</param>
+    /// <param name="packagePath">Absolute path to the package directory</param>
     /// <param name="ct">Cancellation token</param>
-    /// <returns>Result of the dependency analysis</returns>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
     Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct);
 
     /// <summary>
-    /// Validates the changelog for the specific package.
+    /// Format code for the target language.
     /// </summary>
-    /// <param name="packagePath">Path to the package directory</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Result of the changelog validation</returns>
+    /// <param name="packagePath">Absolute path to the package directory</param>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
+    Task<CLICheckResponse> FormatCodeAsync(string packagePath, CancellationToken ct);
+
+    /// <summary>
+    /// Run linting/static analysis for the target language.
+    /// </summary>
+    /// <param name="packagePath">Absolute path to the package directory</param>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
+    Task<CLICheckResponse> LintCodeAsync(string packagePath, CancellationToken ct);
+
+    /// <summary>
+    /// Run tests for the target language.
+    /// </summary>
+    /// <param name="packagePath">Absolute path to the package directory</param>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
+    Task<CLICheckResponse> RunTestsAsync(string packagePath, CancellationToken ct);
+
+    /// <summary>
+    /// Validate changelog for the target language.
+    /// </summary>
+    /// <param name="packagePath">Absolute path to the package directory</param>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
     Task<CLICheckResponse> ValidateChangelogAsync(string packagePath, CancellationToken ct);
 
     /// <summary>
-    /// Validates the README for the specific package.
+    /// Validate README for the target language.
     /// </summary>
-    /// <param name="packagePath">Path to the package directory</param>
-    /// <returns>Result of the README validation</returns>
+    /// <param name="packagePath">Absolute path to the package directory</param>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
     Task<CLICheckResponse> ValidateReadmeAsync(string packagePath);
 
     /// <summary>
-    /// Checks spelling in the specific package.
+    /// Check spelling in the target language package using cspell.
     /// </summary>
-    /// <param name="packagePath">Path to the package directory</param>
-    /// <returns>Result of the spelling check</returns>
+    /// <param name="packagePath">Absolute path to the package directory</param>
+    /// <returns>CLI check response containing success/failure status and response message</returns>
     Task<CLICheckResponse> CheckSpellingAsync(string packagePath);
-
-    /// <summary>
-    /// Gets the SDK package path for the given repository and package path.
+    /// SDK package paths should be the package name, as referred to by any scripts within the repo.
     /// </summary>
-    /// <param name="repo">Repository root path</param>
-    /// <param name="packagePath">Package path</param>
-    /// <returns>SDK package path</returns>
+    /// <returns>The package name, suitable for passing to scripts that take a -PackagePath parameter. 
+    /// Some examples:
+    /// - In Go, this would be of the format "sdk/messaging/azservicebus"
+    /// - In Python, it would be "azure-servicebus".
+    /// </returns>
     string GetSDKPackagePath(string repo, string packagePath);
 }
 
 /// <summary>
-/// Implementation of language repository service.
+/// Base implementation of language repository service.
+/// Language-specific implementations should inherit from this class and override methods as needed.
 /// </summary>
-public class LanguageChecks : ILanguageChecks 
+public class LanguageRepoService : ILanguageRepoService
 {
-    private readonly IProcessHelper _processHelper;
-    private readonly INpxHelper _npxHelper;
-    private readonly IGitHelper _gitHelper;
-    private readonly ILogger<LanguageChecks> _logger;
-    private readonly ILanguageSpecificCheckResolver _languageSpecificCheckResolver;
+    protected readonly IProcessHelper _processHelper;
+    protected readonly INpxHelper _npxHelper;
+    protected readonly IGitHelper _gitHelper;
+    protected readonly ILogger<LanguageRepoService> _logger;
 
-    public LanguageChecks(IProcessHelper processHelper, INpxHelper npxHelper, IGitHelper gitHelper, ILogger<LanguageChecks> logger, ILanguageSpecificCheckResolver languageSpecificCheckResolver)
+    public LanguageRepoService(IProcessHelper processHelper, INpxHelper npxHelper, IGitHelper gitHelper, ILogger<LanguageRepoService> logger)
     {
         _processHelper = processHelper;
         _npxHelper = npxHelper;
         _gitHelper = gitHelper;
         _logger = logger;
-        _languageSpecificCheckResolver = languageSpecificCheckResolver;
+    }
+
+    /// <summary>
+    /// Creates a response from a ProcessResult.
+    /// </summary>
+    /// <param name="result">The process result</param>
+    /// <returns>Success or failure response based on exit code</returns>
+    protected static CLICheckResponse CreateResponseFromProcessResult(ProcessResult result)
+    {
+        return result.ExitCode == 0
+            ? new CLICheckResponse(result.ExitCode, result.Output)
+            : new CLICheckResponse(result.ExitCode, result.Output, "Process failed");
     }
 
     /// <summary>
@@ -74,7 +107,7 @@ public class LanguageChecks : ILanguageChecks
     /// </summary>
     /// <param name="packagePath">Absolute path to the package directory</param>
     /// <returns>Repository root path if successful, or CLICheckResponse with error if validation fails</returns>
-    private (string? repoRoot, CLICheckResponse? errorResponse) ValidatePackageAndDiscoverRepo(string packagePath)
+    protected (string? repoRoot, CLICheckResponse? errorResponse) ValidatePackageAndDiscoverRepo(string packagePath)
     {
         if (!Directory.Exists(packagePath))
         {
@@ -93,19 +126,26 @@ public class LanguageChecks : ILanguageChecks
 
     public virtual async Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct)
     {
-        var languageSpecificCheck = await _languageSpecificCheckResolver.GetLanguageCheckAsync(packagePath);
-        
-        if (languageSpecificCheck == null)
-        {
-            _logger.LogError("No language-specific check handler found for package at {PackagePath}. Supported languages may not include this package type.", packagePath);
-            return new CLICheckResponse(
-                exitCode: 1, 
-                checkStatusDetails: $"No language-specific check handler found for package at {packagePath}. Supported languages may not include this package type.",
-                error: "Unsupported package type"
-            );
-        }
-        
-        return await languageSpecificCheck.AnalyzeDependenciesAsync(packagePath, ct);
+        await Task.CompletedTask;
+        return new CLICheckResponse(1, "", "AnalyzeDependencies not implemented for this language");
+    }
+
+    public virtual async Task<CLICheckResponse> FormatCodeAsync(string packagePath, CancellationToken ct)
+    {
+        await Task.CompletedTask;
+        return new CLICheckResponse(1, "", "FormatCode not implemented for this language");
+    }
+
+    public virtual async Task<CLICheckResponse> LintCodeAsync(string packagePath, CancellationToken ct)
+    {
+        await Task.CompletedTask;
+        return new CLICheckResponse(1, "", "LintCode not implemented for this language");
+    }
+
+    public virtual async Task<CLICheckResponse> RunTestsAsync(string packagePath, CancellationToken ct)
+    {
+        await Task.CompletedTask;
+        return new CLICheckResponse(1, "", "RunTests not implemented for this language");
     }
 
     public virtual async Task<CLICheckResponse> ValidateChangelogAsync(string packagePath, CancellationToken ct)
@@ -157,7 +197,7 @@ public class LanguageChecks : ILanguageChecks
             var processResult = await _processHelper.Run(new(command, args, timeout: timeout, workingDirectory: packagePath), ct);
             stopwatch.Stop();
 
-            return new CLICheckResponse(processResult);
+            return CreateResponseFromProcessResult(processResult);
         }
         catch (Exception ex)
         {
@@ -208,7 +248,7 @@ public class LanguageChecks : ILanguageChecks
             var timeout = TimeSpan.FromMinutes(10);
             var processResult = await _processHelper.Run(new(command, args, timeout: timeout, workingDirectory: packagePath), ct: default);
 
-            return new CLICheckResponse(processResult);
+            return CreateResponseFromProcessResult(processResult);
         }
         catch (Exception ex)
         {
@@ -251,7 +291,7 @@ public class LanguageChecks : ILanguageChecks
                 logOutputStream: true 
             ); 
             var processResult = await _npxHelper.Run(npxOptions, ct: default);
-            return new CLICheckResponse(processResult);
+            return CreateResponseFromProcessResult(processResult);
         }
         catch (Exception ex)
         {
