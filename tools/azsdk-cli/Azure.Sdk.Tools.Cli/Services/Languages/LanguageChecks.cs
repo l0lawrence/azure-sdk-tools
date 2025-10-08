@@ -16,14 +16,6 @@ namespace Azure.Sdk.Tools.Cli.Services;
 public interface ILanguageChecks
 {
     /// <summary>
-    /// Analyzes dependencies for the specific package.
-    /// </summary>
-    /// <param name="packagePath">Path to the package directory</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Result of the dependency analysis</returns>
-    Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct);
-
-    /// <summary>
     /// Validates the changelog for the specific package.
     /// </summary>
     /// <param name="packagePath">Path to the package directory</param>
@@ -124,23 +116,6 @@ public class LanguageChecks : ILanguageChecks
         }
 
         return (packageRepoRoot, null);
-    }
-
-    public virtual async Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct)
-    {
-        var languageSpecificCheck = await _languageSpecificCheckResolver.GetLanguageCheckAsync(packagePath);
-
-        if (languageSpecificCheck == null)
-        {
-            _logger.LogError("No language-specific check handler found for package at {PackagePath}. Supported languages may not include this package type.", packagePath);
-            return new CLICheckResponse(
-                exitCode: 1,
-                checkStatusDetails: $"No language-specific check handler found for package at {packagePath}. Supported languages may not include this package type.",
-                error: "Unsupported package type"
-            );
-        }
-
-        return await languageSpecificCheck.AnalyzeDependenciesAsync(packagePath, ct);
     }
 
     public virtual async Task<CLICheckResponse> ValidateChangelogAsync(string packagePath, CancellationToken ct)

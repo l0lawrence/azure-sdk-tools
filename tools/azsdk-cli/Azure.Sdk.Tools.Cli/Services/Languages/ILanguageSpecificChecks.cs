@@ -13,17 +13,6 @@ public interface ILanguageSpecificChecks
     string SupportedLanguage { get; }
 
     /// <summary>
-    /// Analyzes dependencies for the specific package.
-    /// </summary>
-    /// <param name="packagePath">Path to the package directory</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Result of the dependency analysis</returns>
-    Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(new CLICheckResponse(1, "", "Not implemented for this language."));
-    }
-
-    /// <summary>
     /// Updates code snippets in the specific package using language-specific tools.
     /// </summary>
     /// <param name="packagePath">Path to the package directory</param>

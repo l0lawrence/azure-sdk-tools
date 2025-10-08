@@ -16,11 +16,6 @@ public enum PackageCheckType
     Changelog,
 
     /// <summary>
-    /// Run dependency analysis check.
-    /// </summary>
-    Dependency,
-
-    /// <summary>
     /// Run README validation check.
     /// </summary>
     Readme,
@@ -44,5 +39,4 @@ public enum PackageCheckType
     /// Format code
     /// </summary>
     Format
-
 }

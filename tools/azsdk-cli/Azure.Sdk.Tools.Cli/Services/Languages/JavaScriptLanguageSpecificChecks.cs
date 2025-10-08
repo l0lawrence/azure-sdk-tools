@@ -30,12 +30,6 @@ public class JavaScriptLanguageSpecificChecks : ILanguageSpecificChecks
 
     public string SupportedLanguage => "JavaScript";
 
-    public async Task<CLICheckResponse> AnalyzeDependenciesAsync(string packagePath, CancellationToken ct)
-    {
-        // Implementation for analyzing dependencies in a JavaScript project
-        return await Task.FromResult(new CLICheckResponse());
-    }
-
     public async Task<CLICheckResponse> UpdateSnippetsAsync(string packagePath, CancellationToken cancellationToken = default)
     {
         try
